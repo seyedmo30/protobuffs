@@ -1,0 +1,201 @@
+syntax = "proto3";
+package proxy;
+//import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+option go_package = "./ticket/pb";
+
+//https://stackoverflow.com/questions/42622015/how-to-define-an-optional-field-in-protobuf-3
+
+message ticket{
+  issue issue = 1;
+  string key = 2;
+  string content = 3;
+  string createdByClient = 4;
+  bool createdByClientFlag = 5;  // this flag must set as a true value while createdByClient is not nil
+  user createdByAdmin = 6;
+  bool createdByAdminFlag = 7;
+  google.protobuf.Timestamp createdAt = 8;
+  user viewedByAdmin = 9;
+  bool viewedByAdminFlag = 10;
+  google.protobuf.Timestamp viewedByAdminAt = 11;
+  bool viewedByAdminAtFlag = 12;
+  ticket reference = 13;
+  bool referenceFlag = 14;
+  TICKET_TYPE type = 15;
+}
+
+enum TICKET_TYPE {
+  UnDefinedType = 0;
+  ClientTicketType = 1;
+  AdminTicketType = 2;
+}
+
+
+message user{
+  string sub = 1;
+  string username = 2;
+  string firstname =3;
+  string lastname = 4;
+  string email = 5;
+  bool isSuperUser = 6;
+  bool isStuff = 7;
+  bool isActive = 8;
+}
+
+
+message Service{
+  string name = 1;
+  repeated user staffs = 2;
+  user createdBy = 3;
+  google.protobuf.Timestamp createdAt = 4;
+}
+
+message issue{
+  string num = 1;
+  Service Service = 2;
+  bool serviceFlag = 3;
+  string title = 4;
+  string createdByClient = 5;
+  bool createdByClientFlag = 6;
+  user createdByAdmin = 7;
+  bool createdByAdminFlag = 8;
+  google.protobuf.Timestamp createdAt = 9;
+  ISSUE_STATUS status = 10;
+  repeated ticket tickets = 11;
+  repeated string tags = 12;
+}
+
+enum ISSUE_STATUS{
+  UnDefinedStatus = 0;
+  OpenStatus = 1;
+  ClosedStatus = 2;
+}
+
+
+
+message JoinRequest{
+  string userType = 1;
+  string sub = 2;
+}
+
+message JoinResponse{
+  string sessionId = 1;
+  bool sessionIdAtFirst = 2;
+  ticket receivedMessage = 3;
+}
+
+message LeftRequest{
+  string sub = 1;
+  string session =2 ;
+}
+
+message LeftResponse{
+  string message = 1;
+}
+
+message SendNewTicketRequest{
+  CLIENT_TYPE type = 1;
+  string sub = 2;
+  string issueNum = 3;
+  string content = 4;
+}
+
+enum CLIENT_TYPE{
+  UserClientType = 0;
+  AdminClientType = 1;
+}
+
+message SendNewTicketResponse{
+  ticket ticket = 1;
+  bool isNotNull = 2;
+}
+
+message ListenRequest{
+  string sessionId = 1;
+}
+
+message ListenResponse{
+  ticket ticket = 1;
+}
+
+message ReplyRequest{
+  CLIENT_TYPE type = 1;
+  string sub = 2;
+  string issueNum = 3;
+  string content = 4;
+  string referenceKey = 5;
+}
+
+
+message OpenIssueRequest{
+  CLIENT_TYPE type = 1;
+  string sub = 2;
+  string serviceName = 3;
+  string title = 4;
+  repeated string tags = 5;
+}
+
+message OpenIssueResponse{
+  issue issue = 1;
+  bool isNotNull = 2;
+}
+
+message listTicketFilter{
+  string issue = 1;
+  int32 skip =2;
+  int32 limit = 3;
+}
+
+message ListTicketsRequest {
+  string issueNumber = 1;
+  CLIENT_TYPE type = 2;
+  string sub = 3;
+  listTicketFilter filter = 4;
+}
+
+message ListTicketsResponse{
+  repeated ticket tickets = 1;
+  issue issue = 2;
+}
+
+message JoinNavbarRequest {
+  CLIENT_TYPE type = 1;
+  string sub = 2;
+  string olderSessionId = 3;
+}
+
+message JoinNavbarResponse {
+  string sessionId =1;
+  bool atFirstResponse =2;
+  uint32 unread = 3;
+}
+
+message MarkAsReadRequest{
+  string key = 1;
+  string sub = 2;
+  CLIENT_TYPE type = 3;
+}
+
+message MarkAsReadResponse{
+
+}
+
+message LeftNavbarRequest{
+  string sub = 1;
+  string session = 2;
+}
+
+message LeftNavbarResponse{}
+
+service TicketService{
+  rpc Join(JoinRequest) returns (stream JoinResponse){}
+  rpc Left(LeftRequest) returns (LeftResponse){}
+  rpc SendNewTicket(SendNewTicketRequest) returns (SendNewTicketResponse){}
+  rpc Listen(ListenRequest) returns (stream ListenResponse){}
+  rpc Reply(ReplyRequest) returns(SendNewTicketResponse){}
+  rpc OpenIssue(OpenIssueRequest) returns (OpenIssueResponse){}
+  rpc MarkAsRead(MarkAsReadRequest) returns (MarkAsReadResponse){}
+  rpc ListTicketsInIssue(ListTicketsRequest) returns (ListTicketsResponse){}
+  rpc JoinNavbar(JoinNavbarRequest) returns (stream JoinNavbarResponse){}
+  rpc LeftNavbar(LeftNavbarRequest) returns (LeftNavbarResponse){}
+}
